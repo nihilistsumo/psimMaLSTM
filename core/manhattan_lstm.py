@@ -59,9 +59,9 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     Xval_comb = [Xval1, Xval2]
     Xtest_comb = [Xtest1, Xtest2]
 
-    ytrain = to_categorical(ytrain)
-    yval = to_categorical(yval)
-    ytest = to_categorical(ytest)
+    # ytrain = to_categorical(ytrain)
+    # yval = to_categorical(yval)
+    # ytest = to_categorical(ytest)
 
     para_seq1 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence1')
     para_seq2 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence2')
@@ -79,12 +79,12 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
 
     model = Model(inputs=[para_seq1, para_seq2], outputs=[main_output])
     #
-    # opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
+    opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
     #
-    opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
+    # opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 
-    #model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-    model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
+    model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
+    #model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
     model.summary()
 
