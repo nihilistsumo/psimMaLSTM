@@ -46,12 +46,12 @@ def prepare_data(train_data, val_data, test_data, seq_len, vec_len):
     return Xtrain, ytrain, Xval, yval, Xtest, ytest
 
 def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1):
-    Xtrain1 = Xtrain[:, :10, :]
-    Xtrain2 = Xtrain[:, 10:, :]
-    Xval1 = Xval[:, :10, :]
-    Xval2 = Xval[:, 10:, :]
-    Xtest1 = Xtest[:, :10, :]
-    Xtest2 = Xtest[:, 10:, :]
+    Xtrain1 = Xtrain[:, :seq_len, :]
+    Xtrain2 = Xtrain[:, seq_len:, :]
+    Xval1 = Xval[:, :seq_len, :]
+    Xval2 = Xval[:, seq_len:, :]
+    Xtest1 = Xtest[:, :seq_len, :]
+    Xtest2 = Xtest[:, seq_len:, :]
 
     Xtrain_comb = [Xtrain1, Xtrain2]
     Xval_comb = [Xval1, Xval2]
