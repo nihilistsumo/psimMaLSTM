@@ -20,9 +20,11 @@ from keras import regularizers
 
 import numpy as np
 
-def exponent_neg_manhattan_distance(x, lstm_layer_size):
+LAMBDA_LAYER_SIZE = 10
+
+def exponent_neg_manhattan_distance(x):
     ''' Helper function for the similarity estimate of the LSTMs outputs '''
-    return K.exp(-K.sum(K.abs(x[:,:lstm_layer_size] - x[:,lstm_layer_size:]), axis=1, keepdims=True))
+    return K.exp(-K.sum(K.abs(x[:,:LAMBDA_LAYER_SIZE] - x[:,LAMBDA_LAYER_SIZE:]), axis=1, keepdims=True))
 
 def exponent_neg_cosine_distance(x, lstm_layer_size=10):
     ''' Helper function for the similarity estimate of the LSTMs outputs '''
@@ -77,7 +79,7 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     concats = concatenate([l1_out, l2_out], axis=-1)
     #
     # dist_output = Lambda(exponent_neg_cosine_distance, output_shape=(1,), name='distance')(concats)
-    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), name='distance')((concats, lstm_layer_size))
+    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), name='distance')(concats)
     main_output = Dense(1, activation='relu')(dist_output)
     # else:
     #     main_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,))(concats)
@@ -118,6 +120,8 @@ def main():
     lstm_size = args["lstm_layer_size"]
     learning_rate = args["learning_rate"]
     epochs = args["epochs"]
+
+    LAMBDA_LAYER_SIZE = lstm_size
     data = np.load(data_file)
     train_data = data[()]["train_data"]
     val_data = data[()]["val_data"]
