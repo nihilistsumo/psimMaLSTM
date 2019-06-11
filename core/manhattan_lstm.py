@@ -85,11 +85,10 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
 
     model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
     #model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
-    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
+    #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
     model.summary()
 
-    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs,
-                        batch_size=num_bacthes, verbose=1, callbacks=[es])
+    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs, batch_size=num_bacthes, verbose=1)
 
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer('distance').output)
