@@ -18,6 +18,7 @@ from keras.layers import Embedding, Input, TimeDistributed
 from keras.layers import LSTM, Lambda, concatenate, Dense
 from keras import regularizers
 from keras.callbacks import EarlyStopping
+from keras.utils import to_categorical
 
 import numpy as np
 
@@ -57,6 +58,10 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     Xtrain_comb = [Xtrain1, Xtrain2]
     Xval_comb = [Xval1, Xval2]
     Xtest_comb = [Xtest1, Xtest2]
+
+    ytrain = to_categorical(ytrain)
+    yval = to_categorical(yval)
+    ytest = to_categorical(ytest)
 
     para_seq1 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence1')
     para_seq2 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence2')
