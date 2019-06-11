@@ -47,7 +47,7 @@ def prepare_data(train_data, val_data, test_data, seq_len, vec_len):
     Xtest = Xtest.reshape((test_samples, 2 * seq_len, vec_len))
     return Xtrain, ytrain, Xval, yval, Xtest, ytest
 
-def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1):
+def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, lstm_layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1):
     Xtrain1 = Xtrain[:, :seq_len, :]
     Xtrain2 = Xtrain[:, seq_len:, :]
     Xval1 = Xval[:, :seq_len, :]
@@ -79,12 +79,14 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
 
     model = Model(inputs=[para_seq1, para_seq2], outputs=[main_output])
     #
-    opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
+    if optim == 'adadelta':
+        opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
+    else:
+        opt = keras.optimizers.Adam(lr=learning_rate)
     #
     # opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
-    #model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
     #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
     model.summary()
 
@@ -111,6 +113,7 @@ def main():
     parser.add_argument("-lstm", "--lstm_layer_size", type=int, help="Size of each LSTM layer")
     parser.add_argument("-lr", "--learning_rate", type=float, help="Learning rate")
     parser.add_argument("-e", "--epochs", type=int, help="No. of epochs")
+    parser.add_argument("-opt", "--optimizer", help="Choose optimizer (adam/adadelta)")
     parser.add_argument("-o", "--out", required=True, help="Path to save trained keras model")
 
     args = vars(parser.parse_args())
@@ -120,6 +123,7 @@ def main():
     lstm_size = args["lstm_layer_size"]
     learning_rate = args["learning_rate"]
     epochs = args["epochs"]
+    optim = args["optimizer"]
     out_file = args["out"]
 
     LAMBDA_LAYER_SIZE = lstm_size
@@ -128,7 +132,7 @@ def main():
     val_data = data[()]["val_data"]
     test_data = data[()]["test_data"]
     Xtrain, ytrain, Xval, yval, Xtest, ytest = prepare_data(train_data, val_data, test_data, seq_len, vec_len)
-    model = malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_size, learning_rate, epochs)
+    model = malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, lstm_size, learning_rate, epochs)
     model.save(out_file)
     print("Finished! Trained model saved at: "+out_file)
 
