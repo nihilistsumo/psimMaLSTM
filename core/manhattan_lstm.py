@@ -20,7 +20,7 @@ from keras import regularizers
 
 import numpy as np
 
-def exponent_neg_manhattan_distance(x, lstm_layer_size=10):
+def exponent_neg_manhattan_distance(x, lstm_layer_size):
     ''' Helper function for the similarity estimate of the LSTMs outputs '''
     return K.exp(-K.sum(K.abs(x[:,:lstm_layer_size] - x[:,lstm_layer_size:]), axis=1, keepdims=True))
 
@@ -77,7 +77,7 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     concats = concatenate([l1_out, l2_out], axis=-1)
     #
     # dist_output = Lambda(exponent_neg_cosine_distance, output_shape=(1,), name='distance')(concats)
-    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), name='distance')(concats)
+    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), name='distance')(concats, lstm_layer_size)
     main_output = Dense(1, activation='relu')(dist_output)
     # else:
     #     main_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,))(concats)
