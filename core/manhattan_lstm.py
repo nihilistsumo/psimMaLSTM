@@ -102,6 +102,8 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
         print('Expected:', ytest[i], 'Predicted', yhat[i][0], 'Similarity', intermediate_output[i][0])
     print(test_eval)
 
+    return model
+
 def main():
     parser = argparse.ArgumentParser(description="Train and evaluate MaLSTM for paragraph similarity task")
     parser.add_argument("-d", "--data", required=True, help="Path to data dict file")
@@ -110,6 +112,7 @@ def main():
     parser.add_argument("-lstm", "--lstm_layer_size", type=int, help="Size of each LSTM layer")
     parser.add_argument("-lr", "--learning_rate", type=float, help="Learning rate")
     parser.add_argument("-e", "--epochs", type=int, help="No. of epochs")
+    parser.add_argument("-o", "--out", required=True, help="Path to save trained keras model")
 
     args = vars(parser.parse_args())
     data_file = args["data"]
@@ -118,6 +121,7 @@ def main():
     lstm_size = args["lstm_layer_size"]
     learning_rate = args["learning_rate"]
     epochs = args["epochs"]
+    out_file = args["out"]
 
     LAMBDA_LAYER_SIZE = lstm_size
     data = np.load(data_file)
@@ -125,7 +129,9 @@ def main():
     val_data = data[()]["val_data"]
     test_data = data[()]["test_data"]
     Xtrain, ytrain, Xval, yval, Xtest, ytest = prepare_data(train_data, val_data, test_data, seq_len, vec_len)
-    malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_size, learning_rate, epochs)
+    model = malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_size, learning_rate, epochs)
+    model.save(out_file)
+    print("Finished! Trained model saved at: "+out_file)
 
 if __name__ == '__main__':
     main()
