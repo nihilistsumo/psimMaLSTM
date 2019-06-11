@@ -115,8 +115,8 @@ def main():
     data_file = args["data"]
     seq_len = args["seq"]
     vec_len = args["vec"]
-    lstm_size = args["lstm"]
-    learning_rate = args["lr"]
+    lstm_size = args["lstm_layer_size"]
+    learning_rate = args["learning_rate"]
     epochs = args["epochs"]
     data = np.load(data_file)
     train_data = data[()]["train_data"]
