@@ -87,10 +87,10 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, ls
     # opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
-    #es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
+    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=200)
     model.summary()
 
-    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs, batch_size=num_bacthes, verbose=1)
+    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs, batch_size=num_bacthes, verbose=1, callbacks=[es])
 
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer('distance').output)
