@@ -61,33 +61,25 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     para_seq1 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence1')
     para_seq2 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence2')
 
-    # embed_layer = Embedding(output_dim=embedding_size, input_dim=vocab_size + 1, input_length=max_len, trainable=False)
-    # embed_layer.build((None,))
-    # embed_layer.set_weights([embedding.embedding_matrix])
-    #
-    # input_1 = embed_layer(seq_1)
-    # input_2 = embed_layer(seq_2)
-    #
     lstm = LSTM(lstm_layer_size)
-    #
     l1_out = lstm(para_seq1)
     print(l1_out.shape)
     l2_out = lstm(para_seq2)
     print(l2_out.shape)
     #
     concats = concatenate([l1_out, l2_out], axis=-1)
-    #
-    # dist_output = Lambda(exponent_neg_cosine_distance, output_shape=(1,), name='distance')(concats)
+
     dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), arguments={'layer_size':lstm_layer_size}, name='distance')(concats)
     main_output = Dense(1, activation='relu')(dist_output)
-    # else:
-    #     main_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,))(concats)
-    #
+
     model = Model(inputs=[para_seq1, para_seq2], outputs=[main_output])
     #
     # opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
     #
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
+
+    #model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
     model.summary()
 
