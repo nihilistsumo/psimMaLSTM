@@ -17,6 +17,7 @@ from keras.layers import Activation
 from keras.layers import Embedding, Input, TimeDistributed
 from keras.layers import LSTM, Lambda, concatenate, Dense
 from keras import regularizers
+from keras.callbacks import EarlyStopping
 
 import numpy as np
 
@@ -87,15 +88,17 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, lstm_laye
     # opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
     #
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=70)
     model.summary()
 
-    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs, batch_size=num_bacthes, verbose=1)
+    history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs,
+                        batch_size=num_bacthes, verbose=1, callbacks=[es])
 
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer('distance').output)
     intermediate_output = intermediate_layer_model.predict(Xtest_comb)
 
-    num_test_sample = 1000
+    num_test_sample = ytest.shape[0]
     yhat = model.predict(Xtest_comb, verbose=0)
     test_eval = model.evaluate(Xtest_comb, ytest)
     for i in range(num_test_sample):
