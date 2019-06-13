@@ -14,11 +14,16 @@ import keras
 import keras.backend as K
 from keras.models import Model
 from keras.layers import Activation
-from keras.layers import Embedding, Input, TimeDistributed
-from keras.layers import LSTM, Lambda, concatenate, Dense
+from keras.layers import Embedding, Input, TimeDistributed, Dropout
+from keras.layers import LSTM, Lambda, concatenate, Dense, Bidirectional
 from keras import regularizers
 from keras.callbacks import EarlyStopping
 from keras.utils import to_categorical
+from keras.wrappers.scikit_learn import KerasClassifier
+
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import StratifiedKFold
 
 import numpy as np
 
@@ -66,15 +71,18 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, ls
     para_seq1 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence1')
     para_seq2 = Input(shape=(seq_len, vec_len, ), dtype='float32', name='sequence2')
 
-    lstm = LSTM(lstm_layer_size)
-    l1_out = lstm(para_seq1)
+    drop = Dropout(0.5)
+    lstm = LSTM(lstm_layer_size, kernel_regularizer=regularizers.l2(0.001))
+    bilstm = Bidirectional(lstm)
+    l1_out = bilstm(drop(para_seq1))
     print(l1_out.shape)
-    l2_out = lstm(para_seq2)
+    l2_out = bilstm(drop(para_seq2))
     print(l2_out.shape)
     #
     concats = concatenate([l1_out, l2_out], axis=-1)
+    concats_out = drop(concats)
 
-    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), arguments={'layer_size':lstm_layer_size}, name='distance')(concats)
+    dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), arguments={'layer_size':lstm_layer_size * 2}, name='distance')(concats_out)
     main_output = Dense(1, activation='relu')(dist_output)
 
     model = Model(inputs=[para_seq1, para_seq2], outputs=[main_output])
@@ -86,7 +94,7 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, ls
     #
     # opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 
-    model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=num_epochs//10)
     model.summary()
 
@@ -133,6 +141,7 @@ def main():
     test_data = data[()]["test_data"]
     Xtrain, ytrain, Xval, yval, Xtest, ytest = prepare_data(train_data, val_data, test_data, seq_len, vec_len)
     model = malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, lstm_size, learning_rate, epochs)
+
     model.save(out_file)
     print("Finished! Trained model saved at: "+out_file)
 
