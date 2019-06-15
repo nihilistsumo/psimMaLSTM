@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, argparse
+import os, argparse, json
 from sys import exit
 
 from time import time
@@ -52,7 +52,8 @@ def prepare_data(train_data, val_data, test_data, seq_len, vec_len):
     Xtest = Xtest.reshape((test_samples, 2 * seq_len, vec_len))
     return Xtrain, ytrain, Xval, yval, Xtest, ytest
 
-def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, lstm_layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1):
+def malstm(Xtrain, ytrain, train_pairs, Xval, yval, val_pairs, Xtest, ytest, test_pairs, seq_len, vec_len, optim,
+           lstm_layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1, pat=10):
     Xtrain1 = Xtrain[:, :seq_len, :]
     Xtrain2 = Xtrain[:, seq_len:, :]
     Xval1 = Xval[:, :seq_len, :]
@@ -95,54 +96,87 @@ def malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, ls
     # opt = keras.optimizers.SGD(lr=learning_rate, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
-    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=num_epochs//10)
+    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=pat)
     model.summary()
 
     history = model.fit(Xtrain_comb, ytrain, validation_data=(Xval_comb, yval), epochs=num_epochs, batch_size=num_bacthes, verbose=1, callbacks=[es])
 
-    intermediate_layer_model = Model(inputs=model.input,
-                                     outputs=model.get_layer('distance').output)
-    intermediate_output = intermediate_layer_model.predict(Xtest_comb)
+    intermediate_layer_model = Model(inputs=model.input, outputs=model.get_layer('distance').output)
+    intermediate_output_train = intermediate_layer_model.predict(Xtrain_comb)
+    intermediate_output_val = intermediate_layer_model.predict(Xval_comb)
+    intermediate_output_test = intermediate_layer_model.predict(Xtest_comb)
+    parapair_score_dict = dict()
+
+    for i in range(intermediate_output_train.shape[0]):
+        parapair_score_dict[train_pairs[i]] = float(intermediate_output_train[i][0])
+
+    for i in range(intermediate_output_val.shape[0]):
+        parapair_score_dict[val_pairs[i]] = float(intermediate_output_val[i][0])
 
     num_test_sample = ytest.shape[0]
     yhat = model.predict(Xtest_comb, verbose=0)
     test_eval = model.evaluate(Xtest_comb, ytest)
     for i in range(num_test_sample):
-        print('Expected:', ytest[i], 'Predicted', yhat[i][0], 'Similarity', intermediate_output[i][0])
+        print('Expected:', ytest[i], 'Predicted', yhat[i][0], 'Similarity', intermediate_output_test[i][0])
+        parapair_score_dict[test_pairs[i]] = float(intermediate_output_test[i][0])
     print(test_eval)
 
-    return model
+    return model, parapair_score_dict
 
 def main():
     parser = argparse.ArgumentParser(description="Train and evaluate MaLSTM for paragraph similarity task")
+    parser.add_argument("-dn", "--data_nature", required=True, help="Nature of the input data, f: single file, d: multiple files in directory")
     parser.add_argument("-d", "--data", required=True, help="Path to data dict file")
     parser.add_argument("-s", "--seq", required=True, type=int, help="Maximum length of each paragraph in terms of sentence count")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each vector")
     parser.add_argument("-lstm", "--lstm_layer_size", type=int, help="Size of each LSTM layer")
     parser.add_argument("-lr", "--learning_rate", type=float, help="Learning rate")
     parser.add_argument("-e", "--epochs", type=int, help="No. of epochs")
+    parser.add_argument("-b", "--batches", type=int, required=True, help="No. of batches")
+    parser.add_argument("-p", "--patience", type=int, required=True, help="Patience value; No of epochs to execute before early stopping")
     parser.add_argument("-opt", "--optimizer", help="Choose optimizer (adam/adadelta)")
     parser.add_argument("-o", "--out", required=True, help="Path to save trained keras model")
+    parser.add_argument("-po", "--parapair_score_out", required=True, help="Path to save the parapair scores")
 
     args = vars(parser.parse_args())
-    data_file = args["data"]
+    data_nature = args["data_nature"]
+    path_to_data = args["data"]
     seq_len = args["seq"]
     vec_len = args["vec"]
     lstm_size = args["lstm_layer_size"]
     learning_rate = args["learning_rate"]
     epochs = args["epochs"]
+    batches = args["batches"]
+    pat = args["patience"]
     optim = args["optimizer"]
     out_file = args["out"]
+    parapair_out = args["parapair_score_out"]
 
     LAMBDA_LAYER_SIZE = lstm_size
-    data = np.load(data_file)
-    train_data = data[()]["train_data"]
-    val_data = data[()]["val_data"]
-    test_data = data[()]["test_data"]
+
+    if data_nature == 'f':
+        data = np.load(path_to_data)
+        train_data = data[()]["train_data"]
+        train_pairs = data[()]["train_parapairs"]
+        val_data = data[()]["val_data"]
+        val_pairs = data[()]["val_parapairs"]
+        test_data = data[()]["test_data"]
+        test_pairs = data[()]["test_parapairs"]
+    else:
+        train_data = np.load(path_to_data + "/train_data")
+        train_pairs = np.load(path_to_data + "train_parapair_list")
+        val_data = np.load(path_to_data + "val_data")
+        val_pairs = np.load(path_to_data + "val_parapair_list")
+        test_data = np.load(path_to_data + "test_data")
+        test_pairs = np.load(path_to_data + "test_parapair_list")
     Xtrain, ytrain, Xval, yval, Xtest, ytest = prepare_data(train_data, val_data, test_data, seq_len, vec_len)
-    model = malstm(Xtrain, ytrain, Xval, yval, Xtest, ytest, seq_len, vec_len, optim, lstm_size, learning_rate, epochs)
+    model, parapair_scores = malstm(Xtrain, ytrain, train_pairs, Xval, yval, val_pairs, Xtest, ytest, test_pairs,
+                                    seq_len, vec_len, optim, lstm_size, learning_rate, epochs, batches, pat)
 
     model.save(out_file)
+    with open(parapair_out, 'w') as pout:
+        json.dump(parapair_scores, pout)
+
     print("Finished! Trained model saved at: "+out_file)
 
 if __name__ == '__main__':
