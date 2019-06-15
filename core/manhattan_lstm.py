@@ -163,12 +163,12 @@ def main():
         test_data = data[()]["test_data"]
         test_pairs = data[()]["test_parapairs"]
     else:
-        train_data = np.load(path_to_data + "/train_data")
-        train_pairs = np.load(path_to_data + "train_parapair_list")
-        val_data = np.load(path_to_data + "val_data")
-        val_pairs = np.load(path_to_data + "val_parapair_list")
-        test_data = np.load(path_to_data + "test_data")
-        test_pairs = np.load(path_to_data + "test_parapair_list")
+        train_data = np.load(path_to_data + "/train_data.npy")
+        train_pairs = np.load(path_to_data + "/train_parapair_list.npy")
+        val_data = np.load(path_to_data + "/val_data.npy")
+        val_pairs = np.load(path_to_data + "/val_parapair_list.npy")
+        test_data = np.load(path_to_data + "/test_data.npy")
+        test_pairs = np.load(path_to_data + "/test_parapair_list.npy")
     Xtrain, ytrain, Xval, yval, Xtest, ytest = prepare_data(train_data, val_data, test_data, seq_len, vec_len)
     model, parapair_scores = malstm(Xtrain, ytrain, train_pairs, Xval, yval, val_pairs, Xtest, ytest, test_pairs,
                                     seq_len, vec_len, optim, lstm_size, learning_rate, epochs, batches, pat)
