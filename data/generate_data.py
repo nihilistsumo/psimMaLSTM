@@ -103,8 +103,8 @@ def main():
         train_pp = json.load(trpp)
     with open(test_pp_file, 'r') as tpp:
         test_pp = json.load(tpp)
-    train_pt = np.load(train_para_token_file)
-    test_pt = np.load(test_para_token_file)
+    train_pt = np.load(train_para_token_file, allow_pickle=True)
+    test_pt = np.load(test_para_token_file, allow_pickle=True)
 
     print("Going to load glove file...")
     g = get_glove_embedding_df(glove_file)
