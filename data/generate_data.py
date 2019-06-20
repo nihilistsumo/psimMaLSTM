@@ -28,7 +28,7 @@ def prepare_test_data(parapair_data_dict, para_token_dict, vocab, seq_len):
         parapairs = parapair_data_dict[page]["parapairs"]
         labels = parapair_data_dict[page]["labels"]
         assert len(parapairs) == len(labels)
-        for i in len(parapairs):
+        for i in range(len(parapairs)):
             p1 = parapairs[i].split("_")[0]
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
@@ -66,7 +66,7 @@ def prepare_train_data(parapair_data_dict, para_token_dict, vocab, seq_len, trai
         parapairs = parapair_data_dict[page]["parapairs"]
         labels = parapair_data_dict[page]["labels"]
         assert len(parapairs) == len(labels)
-        for i in len(parapairs):
+        for i in range(len(parapairs)):
             p1 = parapairs[i].split("_")[0]
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
