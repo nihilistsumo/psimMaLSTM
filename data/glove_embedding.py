@@ -4,10 +4,6 @@ import argparse, os, json, csv
 import numpy as np
 import pandas as pd
 
-def get_glove_embedding_df(glove_file):
-    glove = pd.read_table(glove_file, sep=" ", index_col=0, header=None, quoting=csv.QUOTE_NONE)
-    return glove
-
 def get_vocab_list(tokenized_para_dict):
     vocab = set()
     for para in tokenized_para_dict[()].keys():
@@ -26,9 +22,7 @@ def create_embed_matrix(glove, vocab):
             embed_matrix[i+1] = np.array(glove.loc[word])
     return embed_matrix
 
-def get_embed_matrix(glove_file, tokenized_para_file):
-    g = get_glove_embedding_df(glove_file)
-    tokenized_para = np.load(tokenized_para_file)
+def get_embed_matrix(g, tokenized_para):
     vocab = get_vocab_list(tokenized_para)
     embed = create_embed_matrix(g, vocab)
     return embed, vocab
