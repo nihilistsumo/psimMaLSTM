@@ -33,7 +33,7 @@ def prepare_test_data(parapair_data_dict, para_token_dict, vocab, seq_len):
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
             p2_seq = get_para_seq(para_token_dict[()][p2], vocab, seq_len)
-            test_seq_data.append(p1_seq + p2_seq + labels[i])
+            test_seq_data.append(p1_seq + p2_seq + [labels[i]])
         print(page)
     random.shuffle(test_seq_data)
     test_seq_data = np.array(test_seq_data).astype(int)
@@ -71,7 +71,7 @@ def prepare_train_data(parapair_data_dict, para_token_dict, vocab, seq_len, trai
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
             p2_seq = get_para_seq(para_token_dict[()][p2], vocab, seq_len)
-            val_seq_data.append(p1_seq + p2_seq + labels[i])
+            val_seq_data.append(p1_seq + p2_seq + [labels[i]])
         print(page)
     random.shuffle(val_seq_data)
     train_seq_data = np.array(train_seq_data).astype(int)
