@@ -1,14 +1,11 @@
 #!/usr/bin/python3
 
 import json, random, math, csv
+from collections import Counter
 import argparse
 import glove_embedding
 import numpy as np
 import pandas as pd
-
-def get_glove_embedding_df(glove_file):
-    glove = pd.read_table(glove_file, sep=" ", index_col=0, header=None, quoting=csv.QUOTE_NONE)
-    return glove
 
 def get_para_seq(para_token_seq, vocab, seq_len):
     seq = []
@@ -52,27 +49,44 @@ def prepare_train_data(parapair_data_dict, para_token_dict, vocab, seq_len, trai
     for page in train_pages:
         parapairs = parapair_data_dict[page]["parapairs"]
         labels = parapair_data_dict[page]["labels"]
+        no_pos_samples = Counter(labels)[1]
+        print(page+" positive samples: {}".format(no_pos_samples))
         assert len(parapairs) == len(labels)
+        count_neg_samples = 0
         for i in range(len(parapairs)):
             p1 = parapairs[i].split("_")[0]
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
             p2_seq = get_para_seq(para_token_dict[()][p2], vocab, seq_len)
-            train_seq_data.append(p1_seq + p2_seq + [labels[i]])
-        print(page)
+
+            # This part will make sure to create a balanced dataset assuming postive samples < negative samples
+            if labels[i] == 0:
+                if count_neg_samples < no_pos_samples:
+                    train_seq_data.append(p1_seq + p2_seq + [labels[i]])
+                    count_neg_samples += 1
+            else:
+                train_seq_data.append(p1_seq + p2_seq + [labels[i]])
     random.shuffle(train_seq_data)
 
     for page in val_pages:
         parapairs = parapair_data_dict[page]["parapairs"]
         labels = parapair_data_dict[page]["labels"]
+        no_pos_samples = Counter(labels)[1]
+        print(page + " positive samples: {}".format(no_pos_samples))
         assert len(parapairs) == len(labels)
+        count_neg_samples = 0
         for i in range(len(parapairs)):
             p1 = parapairs[i].split("_")[0]
             p2 = parapairs[i].split("_")[1]
             p1_seq = get_para_seq(para_token_dict[()][p1], vocab, seq_len)
             p2_seq = get_para_seq(para_token_dict[()][p2], vocab, seq_len)
-            val_seq_data.append(p1_seq + p2_seq + [labels[i]])
-        print(page)
+
+            if labels[i] == 0:
+                if count_neg_samples < no_pos_samples:
+                    val_seq_data.append(p1_seq + p2_seq + [labels[i]])
+                    count_neg_samples += 1
+            else:
+                val_seq_data.append(p1_seq + p2_seq + [labels[i]])
     random.shuffle(val_seq_data)
     train_seq_data = np.array(train_seq_data).astype(int)
     val_seq_data = np.array(val_seq_data).astype(int)
@@ -85,7 +99,7 @@ def main():
     parser.add_argument("-trpt", "--train_para_token", required=True, help="Path to train para token file")
     parser.add_argument("-tp", "--test_parapair", required=True, help="Path to test parapair file")
     parser.add_argument("-tpt", "--test_para_token", required=True, help="Path to test para token file")
-    parser.add_argument("-g", "--glove_file", required=True, help="Path to glove file")
+    parser.add_argument("-vo", "--vocab_list", required=True, help="Path to vocabulary list file")
     parser.add_argument("-l", "--seq_len", type=int, required=True, help="Maximum length of paragraph sequence")
     parser.add_argument("-vs", "--train_split_ratio", type=float, required=True, help="Fraction of train/validation split")
     parser.add_argument("-o", "--out_dir", required=True, help="Path to output directory")
@@ -94,7 +108,7 @@ def main():
     train_para_token_file = args["train_para_token"]
     test_pp_file = args["test_parapair"]
     test_para_token_file = args["test_para_token"]
-    glove_file = args["glove_file"]
+    vocab_file = args["vocab_list"]
     seq_len = args["seq_len"]
     tv_ratio = args["train_split_ratio"]
     outdir = args["out_dir"]
@@ -106,23 +120,13 @@ def main():
     train_pt = np.load(train_para_token_file, allow_pickle=True)
     test_pt = np.load(test_para_token_file, allow_pickle=True)
 
-    print("Going to load glove file...")
-    g = get_glove_embedding_df(glove_file)
-    print("Loaded glove file")
+    vocab_list = np.load(vocab_file).tolist()
+    print("Data loaded")
 
-    train_embedding_matrix, train_vocab = glove_embedding.get_embed_matrix(g, train_pt)
-    print("Train embedding matrix and vocab list calculated")
-    test_embedding_matrix, test_vocab = glove_embedding.get_embed_matrix(g, test_pt)
-    print("Test embedding matrix and vocab list calculated")
+    train_seq_data, val_seq_data = prepare_train_data(train_pp, train_pt, vocab_list, seq_len, tv_ratio)
+    test_seq_data = prepare_test_data(test_pp, test_pt, vocab_list, seq_len)
 
-    train_seq_data, val_seq_data = prepare_train_data(train_pp, train_pt, train_vocab, seq_len, tv_ratio)
-    test_seq_data = prepare_test_data(test_pp, test_pt, test_vocab, seq_len)
-
-    np.save(outdir+"/train_vocab_list", train_vocab)
-    np.save(outdir+"/train_embedding_matrix", train_embedding_matrix)
-    np.save(outdir+"/test_vocab_list", test_vocab)
-    np.save(outdir+"/test_embedding_matrix", test_embedding_matrix)
-    np.save(outdir+"/train_dat", train_seq_data)
+    np.save(outdir+"/train_data", train_seq_data)
     np.save(outdir+"/val_data", val_seq_data)
     np.save(outdir+"/test_data", test_seq_data)
 
