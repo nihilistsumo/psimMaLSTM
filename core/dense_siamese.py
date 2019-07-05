@@ -63,7 +63,7 @@ def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, train_val_
     val_pairs = []
     for page in train_pages:
         train_pos, train_neg = get_discriminative_samples(parapair_dict[page], hier_qrels_reverse)
-        train_neg = random.sample(train_neg, len(train_pos))
+        # train_neg = random.sample(train_neg, len(train_pos))
         for p in train_pos:
             train_pairs.append([p, 1])
         for p in train_neg:
@@ -83,12 +83,13 @@ def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, train_val_
 
     return Xtrain, ytrain, Xval, yval
 
-def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse):
+def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse, take_random):
     test_pairs = []
     for page in parapair_dict.keys():
         test_pos, test_neg = get_discriminative_samples(parapair_dict[page], hier_qrels_reverse)
         # test_pos, test_neg = get_samples(parapair_dict[page])
-        test_neg = random.sample(test_neg, len(test_pos))
+        if take_random:
+            test_neg = random.sample(test_neg, len(test_pos))
         for p in test_pos:
             test_pairs.append([p, 1])
         for p in test_neg:
@@ -105,33 +106,78 @@ def manhattan_distance(x, layer_size):
 def exponent_neg_manhattan_distance(x, layer_size):
     return K.exp(-K.sum(K.abs(x[:,:layer_size] - x[:,layer_size:]), axis=1, keepdims=True))
 
+def precision(ytrue, yhat):
+    true_pos = K.sum(K.round(K.clip(ytrue * yhat, 0, 1)))
+    predicted_pos = K.sum(K.round(K.clip(yhat, 0, 1)))
+    precision = true_pos / (predicted_pos + K.epsilon())
+    return precision
+
+def recall(ytrue, yhat):
+    true_pos = K.sum(K.round(K.clip(ytrue * yhat, 0, 1)))
+    possible_pos = K.sum(K.round(K.clip(ytrue, 0, 1)))
+    recall = true_pos / (possible_pos + K.epsilon())
+    return recall
+
+def fbeta_score(ytrue, yhat, beta=1):
+    """Computes the F score.
+    The F score is the weighted harmonic mean of precision and recall.
+    Here it is only computed as a batch-wise average, not globally.
+    This is useful for multi-label classification, where input samples can be
+    classified as sets of labels. By only using accuracy (precision) a model
+    would achieve a perfect score by simply assigning every class to every
+    input. In order to avoid this, a metric should penalize incorrect class
+    assignments as well (recall). The F-beta score (ranged from 0.0 to 1.0)
+    computes this, as a weighted mean of the proportion of correct class
+    assignments vs. the proportion of incorrect class assignments.
+    With beta = 1, this is equivalent to a F-measure. With beta < 1, assigning
+    correct classes becomes more important, and with beta > 1 the metric is
+    instead weighted towards penalizing incorrect class assignments.
+    """
+    if beta < 0:
+        raise ValueError('The lowest choosable beta is zero (only precision).')
+
+    # If there are no true positives, fix the F score at 0 like sklearn.
+    if K.sum(K.round(K.clip(ytrue, 0, 1))) == 0:
+        return 0
+
+    p = precision(ytrue, yhat)
+    r = recall(ytrue, yhat)
+    bb = beta ** 2
+    fbeta_score = (1 + bb) * (p * r) / (bb * p + r + K.epsilon())
+    return fbeta_score
+
+
+def fmeasure(ytrue, yhat):
+    # also known as f1 measure
+    return fbeta_score(ytrue, yhat, beta=1)
+
 def dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, optim,
            layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1, pat=10):
     para_vec1 = Input(shape=(embed_vec_len,), dtype='float32', name='vec1')
     para_vec2 = Input(shape=(embed_vec_len,), dtype='float32', name='vec2')
 
     drop = Dropout(0.5)
-    dense_layer1 = Dense(layer_size, activation='relu', input_shape=(embed_vec_len,), kernel_regularizer=regularizers.l2(0.001))
+    dense_layer1 = Dense(layer_size, activation='relu', input_shape=(embed_vec_len,), kernel_regularizer=regularizers.l2(0.01))
     p1_d1_out = dense_layer1(drop(para_vec1))
     p2_d1_out = dense_layer1(drop(para_vec2))
 
     dense_layer2 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
                         kernel_regularizer=regularizers.l2(0.001))
-    p1_d2_out = dense_layer2(drop(p1_d1_out))
-    p2_d2_out = dense_layer2(drop(p2_d1_out))
+    p1_d2_out = dense_layer2(p1_d1_out)
+    p2_d2_out = dense_layer2(p2_d1_out)
 
     concats = concatenate([p1_d2_out, p2_d2_out], axis=-1)
-    concats_out = drop(concats)
+    # concats_out = drop(concats)
 
     dense_layer_3 = Dense(layer_size, activation='relu', input_shape=(2 * layer_size,), kernel_regularizer=regularizers.l2(0.001))
-    d3_out = dense_layer_3(drop(concats_out))
+    d3_out = dense_layer_3(concats)
 
     # dist_output = Lambda(manhattan_distance, output_shape=(layer_size,), arguments={'layer_size': layer_size})(concats_out)
     # dist_output = Lambda(exponent_neg_manhattan_distance, output_shape=(1,), arguments={'layer_size': layer_size})(concats_out)
 
     # distance_out_layer = Dense(1, activation='sigmoid', input_shape=(layer_size,), kernel_regularizer=regularizers.l2(0.001), name='distance')(dist_output)
     # distance_out_layer = Dense(1, activation='sigmoid', input_shape=(2 * layer_size,), kernel_regularizer=regularizers.l2(0.001), name='distance')(concats_out)
-    distance_out_layer = Dense(1, activation='sigmoid', input_shape=(layer_size,),
+    distance_out_layer = Dense(1, activation='sigmoid', input_shape=(2 * layer_size,),
                                kernel_regularizer=regularizers.l2(0.001), name='distance')(d3_out)
 
     # main_output = Dense(1, activation='sigmoid')(distance_out_layer)
@@ -143,7 +189,7 @@ def dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, optim
     else:
         opt = keras.optimizers.Adam(lr=learning_rate)
 
-    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', precision, recall, fmeasure])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=pat)
     model.summary()
 
@@ -155,13 +201,6 @@ def dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, optim
     # intermediate_output_train = intermediate_layer_model.predict([Xtrain[:, :embed_vec_len], Xtrain[:, embed_vec_len:]])
     # intermediate_output_val = intermediate_layer_model.predict([Xval[:, :embed_vec_len], Xval[:, embed_vec_len:]])
     # intermediate_output_test = intermediate_layer_model.predict([Xtest[:, :embed_vec_len], Xtest[:, embed_vec_len:]])
-
-    num_test_sample = ytest.shape[0]
-    yhat = model.predict([Xtest[:, :embed_vec_len], Xtest[:, embed_vec_len:]], verbose=0)
-    test_eval = model.evaluate([Xtest[:, :embed_vec_len], Xtest[:, embed_vec_len:]], ytest)
-    for i in range(num_test_sample):
-        print('Expected: ', ytest[i], 'Predicted: ', yhat[i][0], 'Similarity/Distance: ', yhat[i][0])
-    print(test_eval)
 
     return model
 
@@ -216,9 +255,27 @@ def main():
             test_hier_qrels_reverse[l.split(" ")[2]] = l.split(" ")[0]
 
     Xtrain, ytrain, Xval, yval = prepare_train_data(train_parapair, train_emb, hier_qrels_reverse)
-    Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse)
+    Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, False)
+    Xtest_rand, ytest_rand = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, True)
 
     m = dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, vec_len, optim, dense_size, learning_rate, epochs, batches, pat)
+
+    num_test_sample = ytest.shape[0]
+    yhat = m.predict([Xtest[:, :vec_len], Xtest[:, vec_len:]], verbose=0)
+    test_eval = m.evaluate([Xtest[:, :vec_len], Xtest[:, vec_len:]], ytest)
+    print("Showing predictions from 100 random samples in test data")
+    for i in random.sample(range(num_test_sample), 100):
+        print('Expected: ', ytest[i], 'Predicted: ', yhat[i][0], 'Similarity/Distance: ', yhat[i][0])
+    print("Evaluation on test set: " + str(test_eval))
+
+    num_test_sample = ytest_rand.shape[0]
+    yhat_rand = m.predict([Xtest_rand[:, :vec_len], Xtest_rand[:, vec_len:]], verbose=0)
+    test_eval = m.evaluate([Xtest_rand[:, :vec_len], Xtest_rand[:, vec_len:]], ytest_rand)
+    print("Showing predictions from 100 random samples in rand test data")
+    for i in random.sample(range(num_test_sample), 100):
+        print('Expected: ', ytest_rand[i], 'Predicted: ', yhat_rand[i][0], 'Similarity/Distance: ', yhat_rand[i][0])
+    print("Evaluation on randomized and balanced test set: " + str(test_eval))
+
     m.save(out_file)
 
     print("Finished! Trained model saved at: " + out_file)
