@@ -21,7 +21,8 @@ from sklearn.model_selection import StratifiedKFold
 def get_xy(pair_data, embeddings):
     x = []
     y = []
-    for p in pair_data:
+    for i in range(len(pair_data)):
+        p = pair_data[i]
         p1 = p[0].split("_")[0]
         p2 = p[0].split("_")[1]
         y.append(p[1])
@@ -63,7 +64,7 @@ def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, train_val_
     val_pairs = []
     for page in train_pages:
         train_pos, train_neg = get_discriminative_samples(parapair_dict[page], hier_qrels_reverse)
-        # train_neg = random.sample(train_neg, len(train_pos))
+        train_neg = random.sample(train_neg, len(train_pos))
         for p in train_pos:
             train_pairs.append([p, 1])
         for p in train_neg:
