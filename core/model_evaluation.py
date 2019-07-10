@@ -52,9 +52,9 @@ def evaluate_dense_siamese(m, Xtest, ytest, pairlist, vec_len, outfile):
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Dense-Siamese model for paragraph similarity task")
     parser.add_argument("-m", "--model_file", required=True, help="Path to model file to load")
-    parser.add_argument("-pp", "--parapair", required=True, help="Path to parapair file")
+    parser.add_argument("-pp", "--parapair", required=True, help="Path to test parapair file")
     # parser.add_argument("-hq", "--hier_qrels", required=True, help="Path to hierarchical qrels file")
-    parser.add_argument("-em", "--embedding", required=True, help="Path to embedding file")
+    parser.add_argument("-em", "--embedding", required=True, help="Path to test embedding file")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each paragraph vector")
     parser.add_argument("-o", "--out", required=True, help="Path to parapair score output file")
     args = vars(parser.parse_args())
