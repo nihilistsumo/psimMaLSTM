@@ -40,7 +40,7 @@ def evaluate_dense_siamese(m, Xtest, ytest, pairlist, vec_len, outfile):
     assert len(yhat) == len(pairlist)
     parapair_dist = dict()
     for i in range(len(pairlist)):
-        parapair_dist[pairlist[i][0]] = yhat[i][0]
+        parapair_dist[pairlist[i][0]] = float(yhat[i][0])
     with open(outfile, 'w') as out:
         json.dump(parapair_dist, out)
     test_eval = m.evaluate([Xtest[:, :vec_len], Xtest[:, vec_len:]], ytest)
