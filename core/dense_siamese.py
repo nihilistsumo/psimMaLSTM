@@ -205,8 +205,64 @@ def dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, optim
 
     return model
 
+def deep_dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, optim,
+           layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1, pat=10):
+    para_vec1 = Input(shape=(embed_vec_len,), dtype='float32', name='vec1')
+    para_vec2 = Input(shape=(embed_vec_len,), dtype='float32', name='vec2')
+
+    drop = Dropout(0.5)
+    dense_layer1 = Dense(layer_size, activation='relu', input_shape=(embed_vec_len,), kernel_regularizer=regularizers.l2(0.01))
+    p1_d1_out = dense_layer1(drop(para_vec1))
+    p2_d1_out = dense_layer1(drop(para_vec2))
+
+    dense_layer2 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
+                        kernel_regularizer=regularizers.l2(0.001))
+    p1_d2_out = dense_layer2(p1_d1_out)
+    p2_d2_out = dense_layer2(p2_d1_out)
+
+    dense_layer3 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
+                         kernel_regularizer=regularizers.l2(0.001))
+    p1_d3_out = dense_layer3(p1_d2_out)
+    p2_d3_out = dense_layer3(p2_d2_out)
+
+    dense_layer4 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
+                         kernel_regularizer=regularizers.l2(0.001))
+    p1_d4_out = dense_layer4(p1_d3_out)
+    p2_d4_out = dense_layer4(p2_d3_out)
+
+    dense_layer5 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
+                         kernel_regularizer=regularizers.l2(0.001))
+    p1_d5_out = dense_layer5(p1_d4_out)
+    p2_d5_out = dense_layer5(p2_d4_out)
+
+    concats = concatenate([p1_d5_out, p2_d5_out], axis=-1)
+
+    dense_layer_6 = Dense(layer_size, activation='relu', input_shape=(2 * layer_size,), kernel_regularizer=regularizers.l2(0.001))
+    d6_out = dense_layer_6(concats)
+
+    distance_out_layer = Dense(1, activation='sigmoid', input_shape=(2 * layer_size,),
+                               kernel_regularizer=regularizers.l2(0.001), name='distance')(d6_out)
+
+    model = Model(inputs=[para_vec1, para_vec2], outputs=[distance_out_layer])
+
+    if optim == 'adadelta':
+        opt = keras.optimizers.Adadelta(lr=learning_rate, clipnorm=1.25)
+    else:
+        opt = keras.optimizers.Adam(lr=learning_rate)
+
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', precision, recall, fmeasure])
+    es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=pat)
+    model.summary()
+
+    history = model.fit([Xtrain[:, :embed_vec_len], Xtrain[:, embed_vec_len:]], ytrain,
+                        validation_data=([Xval[:, :embed_vec_len], Xval[:, embed_vec_len:]], yval), epochs=num_epochs,
+                        batch_size=num_bacthes, verbose=1, callbacks=[es])
+
+    return model
+
 def main():
     parser = argparse.ArgumentParser(description="Train and evaluate Dense-Siamese network for paragraph similarity task")
+    parser.add_argument("-v", "--variation", type=int, help="1: dense siamese, 2: deep dense siamese")
     parser.add_argument("-rd", "--train_parapair", required=True, help="Path to train parapair file")
     parser.add_argument("-sd", "--test_parapair", required=True, help="Path to test parapair file")
     parser.add_argument("-rhq", "--train_hier_qrels", required=True, help="Path to train hierarchical qrels")
@@ -223,6 +279,7 @@ def main():
     parser.add_argument("-o", "--out", required=True, help="Path to save trained keras model")
 
     args = vars(parser.parse_args())
+    variation = args["variation"]
     train_pp_file = args["train_parapair"]
     test_pp_file = args["test_parapair"]
     hier_qrels_file = args["train_hier_qrels"]
@@ -259,7 +316,10 @@ def main():
     Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, False)
     Xtest_rand, ytest_rand = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, True)
 
-    m = dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, vec_len, optim, dense_size, learning_rate, epochs, batches, pat)
+    if variation == 1:
+        m = dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, vec_len, optim, dense_size, learning_rate, epochs, batches, pat)
+    else:
+        m = deep_dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, vec_len, optim, dense_size, learning_rate, epochs, batches, pat)
 
     num_test_sample = ytest.shape[0]
     yhat = m.predict([Xtest[:, :vec_len], Xtest[:, vec_len:]], verbose=0)
