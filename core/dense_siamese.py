@@ -262,7 +262,7 @@ def deep_dense_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, embed_vec_len, 
 
 def main():
     parser = argparse.ArgumentParser(description="Train and evaluate Dense-Siamese network for paragraph similarity task")
-    parser.add_argument("-v", "--variation", type=int, help="1: dense siamese, 2: deep dense siamese")
+    parser.add_argument("-vr", "--variation", type=int, help="1: dense siamese, 2: deep dense siamese")
     parser.add_argument("-rd", "--train_parapair", required=True, help="Path to train parapair file")
     parser.add_argument("-sd", "--test_parapair", required=True, help="Path to test parapair file")
     parser.add_argument("-rhq", "--train_hier_qrels", required=True, help="Path to train hierarchical qrels")
