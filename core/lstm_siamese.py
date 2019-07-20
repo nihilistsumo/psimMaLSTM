@@ -219,7 +219,7 @@ def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_ve
                           kernel_regularizer=regularizers.l2(0.001))
     d3_out = dense_layer_3(concats)
 
-    distance_out_layer = Dense(1, activation='sigmoid', input_shape=(2 * layer_size,),
+    distance_out_layer = Dense(1, activation='sigmoid', input_shape=(layer_size,),
                                kernel_regularizer=regularizers.l2(0.001), name='distance')(d3_out)
 
     model = Model(inputs=[para_vec1, para_vec2], outputs=[distance_out_layer])
