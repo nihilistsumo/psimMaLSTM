@@ -65,7 +65,7 @@ def fmeasure(ytrue, yhat):
     return fbeta_score(ytrue, yhat, beta=1)
 
 def auc(ytrue, yhat):
-    return metrics.roc_auc_score(K.eval(y_true), K.eval(y_pred))
+    return metrics.roc_auc_score(K.eval(ytrue), K.eval(yhat))
 
 def pad_vec_sequence(vec_seq, max_seq_len=100):
     seq_len = vec_seq.shape[0]
