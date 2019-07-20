@@ -65,7 +65,9 @@ def fmeasure(ytrue, yhat):
     return fbeta_score(ytrue, yhat, beta=1)
 
 def auc(ytrue, yhat):
-    return metrics.roc_auc_score(K.eval(ytrue), K.eval(yhat))
+    auc = tf.metrics.auc(ytrue, yhat)[1]
+    K.get_session().run(tf.local_variables_initializer())
+    return auc
 
 def pad_vec_sequence(vec_seq, max_seq_len=100):
     seq_len = vec_seq.shape[0]
