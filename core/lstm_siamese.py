@@ -90,7 +90,7 @@ def seq_vec_assertion(p1, p2, p1_vec, p2_vec, p1_pad_vec, p2_pad_vec):
     else:
         assert np.allclose(p2_vec[rand_index], p2_pad_vec[rand_index])
 
-def get_xy(pair_data, embeddings, vec_len):
+def get_xy(pair_data, embeddings, vec_len, max_seq_len=100):
     x = []
     y = []
     assert embeddings[()][random.sample(embeddings[()].keys(), 1)[0]].shape[1] == vec_len
@@ -102,8 +102,8 @@ def get_xy(pair_data, embeddings, vec_len):
         y.append(p[1])
         p1_vec_seq = embeddings[()][p1]
         p2_vec_seq = embeddings[()][p2]
-        p1_vec_padded_seq = pad_vec_sequence(p1_vec_seq)
-        p2_vec_padded_seq = pad_vec_sequence(p2_vec_seq)
+        p1_vec_padded_seq = pad_vec_sequence(p1_vec_seq, max_seq_len)
+        p2_vec_padded_seq = pad_vec_sequence(p2_vec_seq, max_seq_len)
 
         # Assertion code
         # if random.random() < 0.5 and assert_count < 10:
@@ -140,7 +140,7 @@ def get_discriminative_samples(parapair_data, hier_qrels_reverse_dict):
                 pos_pairs.append(pairs[i])
     return pos_pairs, neg_pairs
 
-def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, train_val_split=0.8, balanced=True):
+def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, max_seq_len, train_val_split=0.8, balanced=True):
     pages = parapair_dict.keys()
     train_pages = set(random.sample(pages, math.floor(len(pages) * train_val_split)))
     val_pages = pages - train_pages
@@ -165,12 +165,12 @@ def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, t
     random.shuffle(train_pairs)
     random.shuffle(val_pairs)
 
-    Xtrain, ytrain = get_xy(train_pairs, embeddings, vec_len)
-    Xval, yval = get_xy(val_pairs, embeddings, vec_len)
+    Xtrain, ytrain = get_xy(train_pairs, embeddings, vec_len, max_seq_len)
+    Xval, yval = get_xy(val_pairs, embeddings, vec_len, max_seq_len)
 
     return Xtrain, ytrain, Xval, yval
 
-def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, take_random):
+def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, max_seq_len, take_random):
     test_pairs = []
     for page in parapair_dict.keys():
         test_pos, test_neg = get_discriminative_samples(parapair_dict[page], hier_qrels_reverse)
@@ -183,7 +183,7 @@ def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, ta
             test_pairs.append([p, 0])
     random.shuffle(test_pairs)
 
-    Xtest, ytest = get_xy(test_pairs, embeddings, vec_len)
+    Xtest, ytest = get_xy(test_pairs, embeddings, vec_len, max_seq_len)
 
     return Xtest, ytest
 
@@ -300,10 +300,10 @@ def main():
         for l in thq:
             test_hier_qrels_reverse[l.split(" ")[2]] = l.split(" ")[0]
 
-    Xtrain, ytrain, Xval, yval = prepare_train_data(train_parapair, train_emb, hier_qrels_reverse, vec_len)
+    Xtrain, ytrain, Xval, yval = prepare_train_data(train_parapair, train_emb, hier_qrels_reverse, vec_len, max_seq_len)
     print("Train and val data loaded")
-    # Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, False)
-    # Xtest_rand, ytest_rand = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, True)
+    # Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, max_seq_len, False)
+    # Xtest_rand, ytest_rand = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, max_seq_len, True)
     print("Test data loaded")
 
     m = lstm_siamese(Xtrain, ytrain, Xval, yval, [], [], max_seq_len, vec_len, optim, lstm_size, learning_rate, epochs
