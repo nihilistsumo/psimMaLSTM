@@ -17,6 +17,7 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
+from sklearn import metrics
 
 def precision(ytrue, yhat):
     true_pos = K.sum(K.round(K.clip(ytrue * yhat, 0, 1)))
@@ -62,6 +63,9 @@ def fbeta_score(ytrue, yhat, beta=1):
 def fmeasure(ytrue, yhat):
     # also known as f1 measure
     return fbeta_score(ytrue, yhat, beta=1)
+
+def auc(ytrue, yhat):
+    return metrics.roc_auc_score(K.eval(y_true), K.eval(y_pred))
 
 def pad_vec_sequence(vec_seq, max_seq_len=100):
     seq_len = vec_seq.shape[0]
@@ -231,7 +235,7 @@ def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_ve
 
     print("Going to compile model")
 
-    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', precision, recall, fmeasure])
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', auc, precision, recall, fmeasure])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=pat)
     model.summary()
 
