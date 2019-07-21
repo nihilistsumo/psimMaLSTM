@@ -191,7 +191,7 @@ def prepare_test_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, ma
 
     return Xtest, ytest
 
-def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_vec_len, optim,
+def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_vec_len, optim, lstm_layer_size=10,
            layer_size=10, learning_rate=0.01, num_epochs=3, num_bacthes=1, pat=10):
     Xtrain1 = Xtrain[:, :, :embed_vec_len]
     Xtrain2 = Xtrain[:, :, embed_vec_len:]
@@ -208,7 +208,7 @@ def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_ve
     para_vec2 = Input(shape=(max_seq_len, embed_vec_len,), dtype='float32', name='vec2')
 
     drop = Dropout(0.5)
-    lstm = LSTM(layer_size, kernel_regularizer=regularizers.l2(0.001))
+    lstm = LSTM(lstm_layer_size, kernel_regularizer=regularizers.l2(0.001))
     l1_out = lstm(drop(para_vec1))
     l2_out = lstm(drop(para_vec2))
 
@@ -261,6 +261,7 @@ def main():
     parser.add_argument("-s", "--max_seq", type=int, required=True, help="Maximum length of sequence")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each paragraph vector")
     parser.add_argument("-l", "--lstm_layer_size", type=int, help="Size of each lstm layer")
+    parser.add_argument("-dl", "--dense_layer_size", type=int, help="Size of each dense layer")
     parser.add_argument("-lr", "--learning_rate", type=float, help="Learning rate")
     parser.add_argument("-e", "--epochs", type=int, help="No. of epochs")
     parser.add_argument("-b", "--batches", type=int, required=True, help="No. of batches")
@@ -280,6 +281,7 @@ def main():
     max_seq_len = args["max_seq"]
     vec_len = args["vec"]
     lstm_size = args["lstm_layer_size"]
+    dl_size = args["dense_layer_size"]
     learning_rate = args["learning_rate"]
     epochs = args["epochs"]
     batches = args["batches"]
@@ -308,10 +310,14 @@ def main():
     print("Train and val data loaded")
     # Xtest, ytest = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, max_seq_len, False)
     # Xtest_rand, ytest_rand = prepare_test_data(test_parapair, test_emb, test_hier_qrels_reverse, vec_len, max_seq_len, True)
-    print("Test data loaded")
+    # print("Test data loaded")
 
-    m = lstm_siamese(Xtrain, ytrain, Xval, yval, [], [], max_seq_len, vec_len, optim, lstm_size, learning_rate, epochs
-                     , batches, pat)
+    m = lstm_siamese(Xtrain, ytrain, Xval, yval, [], [], max_seq_len, vec_len, optim, lstm_size, dl_size, learning_rate,
+                     epochs, batches, pat)
+
+    m.save(out_file)
+
+    print("Finished! Trained model saved at: " + out_file)
 
 if __name__ == '__main__':
     main()
