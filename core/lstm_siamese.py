@@ -207,10 +207,12 @@ def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_ve
     para_vec1 = Input(shape=(max_seq_len, embed_vec_len,), dtype='float32', name='vec1')
     para_vec2 = Input(shape=(max_seq_len, embed_vec_len,), dtype='float32', name='vec2')
 
-    drop = Dropout(0.5)
-    lstm = LSTM(lstm_layer_size, kernel_regularizer=regularizers.l2(0.001))
-    l1_out = lstm(drop(para_vec1))
-    l2_out = lstm(drop(para_vec2))
+    # drop = Dropout(0.5)
+    lstm = LSTM(lstm_layer_size, kernel_regularizer=regularizers.l2(0.001), dropout=0.2, recurrent_dropout=0.2)
+    # l1_out = lstm(drop(para_vec1))
+    # l2_out = lstm(drop(para_vec2))
+    l1_out = lstm(para_vec1)
+    l2_out = lstm(para_vec2)
 
     dense_layer2 = Dense(layer_size, activation='relu', input_shape=(layer_size,),
                          kernel_regularizer=regularizers.l2(0.001))
