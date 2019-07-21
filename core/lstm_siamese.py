@@ -17,7 +17,7 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
-from sklearn import metrics
+from sklearn.metrics import roc_auc_score
 
 def precision(ytrue, yhat):
     true_pos = K.sum(K.round(K.clip(ytrue * yhat, 0, 1)))
@@ -65,9 +65,7 @@ def fmeasure(ytrue, yhat):
     return fbeta_score(ytrue, yhat, beta=1)
 
 def auc(ytrue, yhat):
-    auc = tf.metrics.auc(ytrue, yhat)[1]
-    K.get_session().run(tf.local_variables_initializer())
-    return auc
+    return tf.py_func(roc_auc_score, (ytrue, yhat), tf.double)
 
 def pad_vec_sequence(vec_seq, max_seq_len=100):
     seq_len = vec_seq.shape[0]
