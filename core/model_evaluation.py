@@ -21,16 +21,22 @@ def get_parapair_scores(model_file, data_file):
 
     intermediate_layer_model = Model(inputs=model.input, outputs=model.get_layer('distance').output)
 
-def prepare_test_data(parapair_dict, embeddings):
+def prepare_test_data(parapair_dict, embeddings, type='dense', vec_len=3072, max_seq_len=100):
     test_pairs = []
     for page in parapair_dict.keys():
-        test_pos, test_neg = dense_siamese.get_samples(parapair_dict[page])
+        if type == 'dense':
+            test_pos, test_neg = dense_siamese.get_samples(parapair_dict[page])
+        else:
+            test_pos, test_neg = lstm_siamese.get_samples(parapair_dict[page])
         for p in test_pos:
             test_pairs.append([p, 1])
         for p in test_neg:
             test_pairs.append([p, 0])
 
-    Xtest, ytest = dense_siamese.get_xy(test_pairs, embeddings)
+    if type == 'dense':
+        Xtest, ytest = dense_siamese.get_xy(test_pairs, embeddings)
+    else:
+        Xtest, ytest = lstm_siamese.get_xy(test_pairs, embeddings, vec_len, max_seq_len)
 
     return Xtest, ytest, test_pairs
 
@@ -55,14 +61,18 @@ def main():
     parser.add_argument("-pp", "--parapair", required=True, help="Path to test parapair file")
     # parser.add_argument("-hq", "--hier_qrels", required=True, help="Path to hierarchical qrels file")
     parser.add_argument("-em", "--embedding", required=True, help="Path to test embedding file")
+    parser.add_argument("-t", "--type", required=True, help="Type of the trained model (dense/lstm)")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each paragraph vector")
+    parser.add_argument("-ms", "--max_seq", help="Maximum sequence length")
     parser.add_argument("-o", "--out", required=True, help="Path to parapair score output file")
     args = vars(parser.parse_args())
     model_file = args["model_file"]
     parapair_file = args["parapair"]
     # hier_qrels_file = args["hier_qrels"]
     emb_file = args["embedding"]
+    type = args["type"]
     vec_len = args["vec"]
+    max_seq_len = args["max_seq"]
     outfile = args["out"]
 
     model = load_model(model_file, custom_objects={'precision':dense_siamese.precision, 'recall':dense_siamese.recall,
@@ -76,7 +86,10 @@ def main():
     #     for l in hq:
     #         hier_qrels_reverse[l.split(" ")[2]] = l.split(" ")[0]
 
-    Xtest, ytest, parapair_list = prepare_test_data(parapair, emb)
+    if type == 'dense':
+        Xtest, ytest, parapair_list = prepare_test_data(parapair, emb)
+    else:
+        Xtest, ytest, parapair_list = prepare_test_data(parapair, emb, type, vec_len, max_seq_len)
 
     evaluate_dense_siamese(model, Xtest, ytest, parapair_list, vec_len, outfile)
 
