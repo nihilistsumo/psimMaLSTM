@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import manhattan_lstm
-import dense_siamese
+import dense_siamese, lstm_siamese
 import numpy as np
 from keras.models import load_model, Model
 import random, argparse, json
