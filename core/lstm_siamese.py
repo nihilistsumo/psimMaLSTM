@@ -108,13 +108,20 @@ def get_xy(pair_data, embeddings, vec_len, max_seq_len=100):
         p2_vec_seq = embeddings[()][p2]
         p1_vec_padded_seq = pad_vec_sequence(p1_vec_seq, max_seq_len)
         p2_vec_padded_seq = pad_vec_sequence(p2_vec_seq, max_seq_len)
+        x_data_entry = np.hstack((p1_vec_padded_seq, p2_vec_padded_seq))
 
         # Assertion code
-        # if random.random() < 0.5 and assert_count < 10:
-        #     seq_vec_assertion(p1, p2, p1_vec_seq, p2_vec_seq, p1_vec_padded_seq, p2_vec_padded_seq)
-        #     assert_count += 1
+        if random.random() < 0.5 and assert_count < 10:
+            seq_vec_assertion(p1, p2, p1_vec_seq, p2_vec_seq, p1_vec_padded_seq, p2_vec_padded_seq)
+            print(p1+"\n======================")
+            print(p1_vec_seq+"\n")
+            print(p1_vec_padded_seq+"\n")
+            print(p2+"\n======================")
+            print(p2_vec_seq+"\n")
+            print(p2_vec_padded_seq+"\n")
+            assert_count += 1
 
-        x.append(np.hstack((p1_vec_padded_seq, p2_vec_padded_seq)))
+        x.append(x_data_entry)
     return np.array(x), np.array(y)
 
 def get_samples(parapair_data):
@@ -237,7 +244,7 @@ def lstm_siamese(Xtrain, ytrain, Xval, yval, Xtest, ytest, max_seq_len, embed_ve
 
     print("Going to compile model")
 
-    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', auc, precision, recall, fmeasure])
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy', precision, recall, fmeasure])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=pat)
     model.summary()
 
