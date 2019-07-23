@@ -114,11 +114,15 @@ def get_xy(pair_data, embeddings, vec_len, max_seq_len=100):
         if random.random() < 0.5 and assert_count < 10:
             seq_vec_assertion(p1, p2, p1_vec_seq, p2_vec_seq, p1_vec_padded_seq, p2_vec_padded_seq)
             print(p1+"\n======================")
-            print(p1_vec_seq+"\n")
-            print(p1_vec_padded_seq+"\n")
+            print(p1_vec_seq)
+            print("\n")
+            print(p1_vec_padded_seq)
+            print("\n")
             print(p2+"\n======================")
-            print(p2_vec_seq+"\n")
-            print(p2_vec_padded_seq+"\n")
+            print(p2_vec_seq)
+            print("\n")
+            print(p2_vec_padded_seq)
+            print("\n")
             assert_count += 1
 
         x.append(x_data_entry)
