@@ -116,13 +116,17 @@ def get_xy(pair_data, embeddings, vec_len, max_seq_len=100):
             print(p1+"\n======================")
             print(p1_vec_seq)
             print("\n")
+            print("p1 pad vec shape: "+str(p1_vec_padded_seq.shape))
             print(p1_vec_padded_seq)
             print("\n")
             print(p2+"\n======================")
             print(p2_vec_seq)
             print("\n")
+            print("p2 pad vec shape: " + str(p2_vec_padded_seq.shape))
             print(p2_vec_padded_seq)
             print("\n")
+            print("X data entry shape: "+str(x_data_entry.shape))
+            print(x_data_entry)
             assert_count += 1
 
         x.append(x_data_entry)
@@ -181,7 +185,9 @@ def prepare_train_data(parapair_dict, embeddings, hier_qrels_reverse, vec_len, m
     random.shuffle(val_pairs)
 
     Xtrain, ytrain = get_xy(train_pairs, embeddings, vec_len, max_seq_len)
+    print("Xtrain shape: "+str(Xtrain.shape))
     Xval, yval = get_xy(val_pairs, embeddings, vec_len, max_seq_len)
+    print("Xval shape: "+str(Xval.shape))
 
     return Xtrain, ytrain, Xval, yval
 
