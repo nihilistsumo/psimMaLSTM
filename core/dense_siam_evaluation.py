@@ -5,6 +5,7 @@ import dense_siamese, lstm_siamese
 import numpy as np
 from keras.models import load_model, Model
 import random, argparse, json
+from sklearn.metrics import roc_auc_score
 
 def get_parapair_scores(model_file, data_file):
     data = np.load(data_file)
@@ -38,6 +39,8 @@ def evaluate_dense_siamese(m, Xtest, ytest, pairlist, vec_len, outfile):
     num_test_sample = ytest.shape[0]
     yhat = m.predict([Xtest[:, :vec_len], Xtest[:, vec_len:]], verbose=0)
     assert len(yhat) == len(pairlist)
+    print(str(ytest[:10]))
+    print(str(yhat[:10]))
     parapair_dist = dict()
     for i in range(len(pairlist)):
         parapair_dist[pairlist[i][0]] = float(yhat[i][0])
@@ -48,6 +51,7 @@ def evaluate_dense_siamese(m, Xtest, ytest, pairlist, vec_len, outfile):
     for i in random.sample(range(num_test_sample), 100):
         print('Expected: ', ytest[i], 'Predicted: ', yhat[i][0], 'Similarity/Distance: ', yhat[i][0])
     print("Evaluation on test set: " + str(test_eval))
+    print("ROC AUC score: "+str(roc_auc_score(ytest, yhat)))
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Dense-Siamese model for paragraph similarity task")
