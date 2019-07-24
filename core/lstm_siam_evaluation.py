@@ -63,7 +63,7 @@ def main():
 
     Xtest, ytest, parapair_list = prepare_test_data(parapair, emb)
 
-    evaluate_dense_siamese(model, Xtest, ytest, parapair_list, vec_len, outfile)
+    evaluate_lstm_siamese(model, Xtest, ytest, parapair_list, vec_len, outfile)
 
 if __name__ == '__main__':
     main()
