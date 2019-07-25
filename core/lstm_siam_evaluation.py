@@ -42,7 +42,7 @@ def main():
     parser.add_argument("-pp", "--parapair", required=True, help="Path to test parapair file")
     # parser.add_argument("-hq", "--hier_qrels", required=True, help="Path to hierarchical qrels file")
     parser.add_argument("-em", "--embedding", required=True, help="Path to test embedding file")
-    parser.add_argument("-s", "--max_seq_len", required=True, help="Max sequence length for which the model is trained for")
+    parser.add_argument("-s", "--max_seq_len", required=True, type=int, help="Max sequence length for which the model is trained for")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each paragraph vector")
     parser.add_argument("-o", "--out", required=True, help="Path to parapair score output file")
     args = vars(parser.parse_args())
