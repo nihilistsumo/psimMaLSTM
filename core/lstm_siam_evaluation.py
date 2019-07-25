@@ -5,6 +5,7 @@ import dense_siamese, lstm_siamese
 import numpy as np
 from keras.models import load_model, Model
 import random, argparse, json
+from sklearn.metrics import roc_auc_score
 
 def prepare_test_data(parapair_dict, embeddings, vec_len, max_seq_len):
     test_pairs = []
@@ -33,6 +34,7 @@ def evaluate_lstm_siamese(m, Xtest, ytest, pairlist, vec_len, outfile):
     for i in random.sample(range(num_test_sample), 100):
         print('Expected: ', ytest[i], 'Predicted: ', yhat[i][0], 'Similarity/Distance: ', yhat[i][0])
     print("Evaluation on test set: " + str(test_eval))
+    print("ROC AUC score: " + str(roc_auc_score(ytest, yhat)))
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Dense-Siamese model for paragraph similarity task")
