@@ -42,6 +42,7 @@ def main():
     parser.add_argument("-pp", "--parapair", required=True, help="Path to test parapair file")
     # parser.add_argument("-hq", "--hier_qrels", required=True, help="Path to hierarchical qrels file")
     parser.add_argument("-em", "--embedding", required=True, help="Path to test embedding file")
+    parser.add_argument("-s", "--max_seq_len", required=True, help="Max sequence length for which the model is trained for")
     parser.add_argument("-v", "--vec", required=True, type=int, help="Length of each paragraph vector")
     parser.add_argument("-o", "--out", required=True, help="Path to parapair score output file")
     args = vars(parser.parse_args())
@@ -49,6 +50,7 @@ def main():
     parapair_file = args["parapair"]
     # hier_qrels_file = args["hier_qrels"]
     emb_file = args["embedding"]
+    seq_len = args["max_seq_len"]
     vec_len = args["vec"]
     outfile = args["out"]
 
@@ -63,7 +65,7 @@ def main():
     #     for l in hq:
     #         hier_qrels_reverse[l.split(" ")[2]] = l.split(" ")[0]
 
-    Xtest, ytest, parapair_list = prepare_test_data(parapair, emb)
+    Xtest, ytest, parapair_list = prepare_test_data(parapair, emb, vec_len, seq_len)
 
     evaluate_lstm_siamese(model, Xtest, ytest, parapair_list, vec_len, outfile)
 
