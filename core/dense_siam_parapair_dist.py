@@ -49,3 +49,6 @@ def main():
     parapair_dist = get_parapair_dist(model, parapair_list, emb, vec_len)
     with open(outfile, 'w') as out:
         json.dump(parapair_dist, out)
+
+if __name__ == '__main__':
+    main()
