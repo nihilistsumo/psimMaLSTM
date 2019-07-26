@@ -111,23 +111,23 @@ def get_xy(pair_data, embeddings, vec_len, max_seq_len=100):
         x_data_entry = np.hstack((p1_vec_padded_seq, p2_vec_padded_seq))
 
         # Assertion code
-        if random.random() < 0.5 and assert_count < 10:
-            seq_vec_assertion(p1, p2, p1_vec_seq, p2_vec_seq, p1_vec_padded_seq, p2_vec_padded_seq)
-            print(p1+"\n======================")
-            print(p1_vec_seq)
-            print("\n")
-            print("p1 pad vec shape: "+str(p1_vec_padded_seq.shape))
-            print(p1_vec_padded_seq)
-            print("\n")
-            print(p2+"\n======================")
-            print(p2_vec_seq)
-            print("\n")
-            print("p2 pad vec shape: " + str(p2_vec_padded_seq.shape))
-            print(p2_vec_padded_seq)
-            print("\n")
-            print("X data entry shape: "+str(x_data_entry.shape))
-            print(x_data_entry)
-            assert_count += 1
+        # if random.random() < 0.5 and assert_count < 10:
+        #     seq_vec_assertion(p1, p2, p1_vec_seq, p2_vec_seq, p1_vec_padded_seq, p2_vec_padded_seq)
+        #     print(p1+"\n======================")
+        #     print(p1_vec_seq)
+        #     print("\n")
+        #     print("p1 pad vec shape: "+str(p1_vec_padded_seq.shape))
+        #     print(p1_vec_padded_seq)
+        #     print("\n")
+        #     print(p2+"\n======================")
+        #     print(p2_vec_seq)
+        #     print("\n")
+        #     print("p2 pad vec shape: " + str(p2_vec_padded_seq.shape))
+        #     print(p2_vec_padded_seq)
+        #     print("\n")
+        #     print("X data entry shape: "+str(x_data_entry.shape))
+        #     print(x_data_entry)
+        #     assert_count += 1
 
         x.append(x_data_entry)
     return np.array(x), np.array(y)
